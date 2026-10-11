@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Pourquoi ça buzze ?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: plateau de quiz apaisé — fond avoine, feuille ivoire, accent sauge, chrono en bande sur le bord haut, mot en capitales condensées. Look unique, identique en clair et en sombre. */
+:root {
+  color-scheme: light;
+  --stage: #F2EBE2;
+  --accent: #3E6B5A;
+  --stage-deep: #E2D6C8;
+  --paper: #FFFCF8;
+  --ink: #2C2521;
+  --muted: #7A6E66;
+  --rule: #EADFD3;
+  --row: #F7F1EA;
+  --yellow: #F0C35A;
+  --red: #E8362B;
+  --alert: #FFB800;
+  --good: #19A060;
+  --good-soft: #E6F0E6;
+  --bad-soft: #F7E4DC;
+  --on-stage: #2C2521;
+  --on-stage-dim: #7A6E66;
+  --font-display: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+html, body { min-height: 100%; }
+body { background: var(--stage); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.45; }
+.wrap { max-width: 620px; margin: 0 auto; padding-inline: 16px; padding-block: 18px 40px; display: flex; flex-direction: column; gap: 14px; }
+
+.top { display: flex; flex-direction: column; gap: 14px; color: var(--on-stage); }
+.toprow { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.brandbox { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.brand { margin: 0; font-family: var(--font-display); font-stretch: 70%; font-weight: 900; font-size: 2rem; text-transform: uppercase; letter-spacing: .005em; line-height: .9; }
+.brand span { color: var(--red); }
+.bump { animation: bump .45s cubic-bezier(.3,1.6,.5,1); }
+@keyframes bump { 40% { transform: translateY(-6px) scale(1.12); } }
+.live { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--on-stage-dim); display: flex; align-items: center; gap: 8px; }
+.live .dot { width: 7px; height: 7px; background: var(--red); border-radius: 50%; animation: blink 1.2s steps(2, start) infinite; }
+@keyframes blink { to { visibility: hidden; } }
+
+.sheet { position: relative; background: var(--paper); border-radius: 4px; padding: 30px 22px 22px; display: flex; flex-direction: column; gap: 20px; box-shadow: 6px 6px 0 var(--stage-deep); border-radius: 8px; }
+.sheet.bad { animation: shake .4s ease; }
+@keyframes shake { 25%,75% { transform: translateX(-6px); } 50% { transform: translateX(6px); } }
+
+/* chrono : bande sur le bord haut + compteur */
+.clock { position: absolute; inset: 0 0 auto 0; height: 8px; background: var(--row); border-radius: 8px 8px 0 0; overflow: hidden; }
+.clock i { display: block; height: 100%; width: 100%; background: var(--good); transform-origin: left; transition: background-color .3s; }
+.sheet.mid .clock i { background: var(--alert); }
+.sheet.mid .secs { color: #B57F00; }
+.sheet.urgent { box-shadow: 6px 6px 0 var(--stage-deep), 0 0 0 3px var(--red); animation: alarm .9s ease-in-out infinite; }
+@keyframes alarm { 50% { box-shadow: 6px 6px 0 var(--stage-deep), 0 0 0 6px rgba(232,54,43,.25); } }
+.sheet.urgent .secs { animation: beat .5s ease-in-out infinite; display: inline-block; }
+@keyframes beat { 50% { transform: scale(1.3); } }
+.meta { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.tags { font-size: .8rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 0; }
+.tags span + span::before { content: "·"; margin: 0 8px; color: var(--rule); }
+.tags .hot { background: var(--red); color: #fff; font-weight: 700; padding: 2px 8px; border-radius: 3px; animation: hotpulse 1.6s ease-in-out infinite; }
+.tags .hot + span::before { margin-left: 10px; }
+@keyframes hotpulse { 50% { background: #FF5A3D; } }
+.secs { font-family: var(--font-mono); font-weight: 700; font-size: 1.35rem; font-variant-numeric: tabular-nums; color: var(--ink); }
+.secs small { font-size: .7rem; font-weight: 500; color: var(--muted); margin-left: 2px; }
+.sheet.urgent .secs { color: var(--red); }
+.sheet.urgent .clock i { background: var(--red); }
+.sheet.next .clock i { background: var(--accent); }
+
+.kw { margin: 0; font-family: var(--font-display); font-stretch: 66%; font-weight: 900; text-transform: uppercase; font-size: min(4.4rem, 8.5vh); line-height: 1; padding-top: .14em; letter-spacing: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.end .kw { white-space: normal; text-wrap: balance; }
+.kw::after { content: ""; display: block; width: 56px; height: 6px; background: var(--yellow); margin-top: 14px; }
+
+.opts { display: grid; gap: 8px; }
+.opt { all: unset; box-sizing: border-box; cursor: pointer; display: grid; grid-template-columns: 32px 1fr; gap: 14px; align-items: center; padding: 12px 14px 12px 12px; border: 2px solid var(--rule); border-radius: 3px; background: var(--paper); font-weight: 500; font-size: 1rem; line-height: 1.35; transition: background .1s, border-color .1s, transform .1s; }
+.opt .k { width: 32px; height: 32px; display: grid; place-items: center; font-family: var(--font-mono); font-weight: 700; font-size: .9rem; color: var(--accent); border: 2px solid currentColor; border-radius: 2px; transition: background .1s, color .1s; }
+.opt:hover:not([disabled]) { border-color: var(--accent); background: var(--row); }
+.opt:hover:not([disabled]) .k { background: var(--accent); color: #fff; border-color: var(--accent); }
+.opt:active:not([disabled]) { transform: translateY(1px); }
+.opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.opt[disabled] { cursor: default; }
+.opt.right { background: var(--good-soft); border-color: var(--good); font-weight: 700; }
+.opt.right .k { background: var(--good); color: #fff; border-color: var(--good); }
+.opt.wrong { background: var(--bad-soft); border-color: var(--red); }
+.opt.wrong .k { background: var(--red); color: #fff; border-color: var(--red); }
+.opt.dim { opacity: .35; }
+
+/* Zone de jeu : propositions et verdict empilés dans la même case, le verdict recouvre les réponses */
+.play { display: grid; }
+.play > * { grid-area: 1 / 1; min-width: 0; }
+.verdict { z-index: 2; display: flex; flex-direction: column; justify-content: center; gap: 12px; padding: 18px; border-radius: 6px; background: rgba(44,37,33,.9); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); color: #FFF8F0; opacity: 0; transform: translateY(8px); transition: opacity .25s ease, transform .25s ease; }
+.verdict.show { opacity: 1; transform: none; }
+.vtitle { margin: 0; font-family: var(--font-display); font-stretch: 70%; font-weight: 900; text-transform: uppercase; font-size: 2.2rem; line-height: 1; }
+.vtitle.ok { color: #5BE39A; }
+.vtitle.ko { color: #FF6B5E; }
+.answer { margin: 0; font-weight: 700; font-size: 1.02rem; line-height: 1.35; }
+.answer small { display: block; font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: #CDBFB3; margin-bottom: 4px; }
+.why { margin: 0; max-width: 62ch; font-size: .95rem; color: #EADFD3; }
+.src { font-size: .8rem; color: #CDBFB3; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.src a { color: #FFF8F0; font-weight: 600; text-underline-offset: 3px; }
+.actions { display: flex; gap: 8px; align-items: stretch; margin-top: 4px; }
+.go { all: unset; box-sizing: border-box; cursor: pointer; flex: 1; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px; min-height: 54px; background: var(--paper); color: var(--ink); font-weight: 800; font-size: 1.02rem; border-radius: 4px; }
+.go .n { font-family: var(--font-mono); font-variant-numeric: tabular-nums; background: var(--red); color: #fff; padding: 3px 9px; border-radius: 3px; }
+.go:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+.hold { all: unset; box-sizing: border-box; cursor: pointer; display: grid; place-items: center; padding: 0 14px; min-height: 54px; font-size: .85rem; font-weight: 700; color: #FFF8F0; border: 1.5px solid rgba(255,248,240,.35); border-radius: 4px; }
+.hold:focus-visible { outline: 2px solid var(--yellow); }
+@media (max-width: 480px) {
+  .sheet { padding: 26px 16px 16px; }
+  .verdict { padding: 16px 14px; }
+  .opt { min-height: 60px; }
+}
+
+/* Bandeau : 1 carte « progression » neutre + 1 carte « score » mise en avant. La remise à zéro est un vrai bouton, à part, en haut à droite. */
+.hud { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 10px; }
+.card { min-width: 0; border-radius: 8px; padding: 10px 14px 12px; }
+.lbl { display: block; font-size: .66rem; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.val { display: inline-block; margin-top: 6px; font-family: var(--font-display); font-stretch: 75%; font-weight: 900; font-size: 2.1rem; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink); }
+.val small { font-size: 1.1rem; color: var(--muted); }
+.cprog { background: transparent; border: 1.5px solid var(--stage-deep); display: flex; flex-direction: column; }
+.cprog .val { font-size: 1.6rem; margin-top: auto; padding-top: 6px; }
+.ptrack { height: 5px; background: var(--stage-deep); margin-top: 8px; border-radius: 3px; overflow: hidden; }
+.ptrack i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 3px; transition: width .4s; }
+.cscore { background: var(--paper); border: 1.5px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); }
+.cell { min-width: 0; }
+.cell + .cell { border-left: 1px solid var(--rule); padding-left: 14px; margin-left: 14px; }
+/* Série : bonnes réponses d'affilée — l'intensité monte avec la série */
+.cell.streak { position: relative; border-radius: 6px; padding-right: 6px; transition: background .4s; }
+.srow { display: flex; align-items: flex-end; gap: 4px; margin-top: 6px; }
+.srow .val { margin-top: 0; }
+.flame { width: 0; height: 26px; overflow: hidden; flex: none; transition: width .3s; transform-origin: 50% 100%; }
+.flame path { fill: currentColor; }
+.rec { display: block; margin-top: 4px; font-size: .66rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.lvl0 .val { color: var(--muted); }
+.lvl1 .val { color: var(--accent); }
+.lvl2 .val, .lvl2 .flame { color: #E07A00; }
+.lvl3 .val, .lvl3 .flame { color: var(--red); }
+.lvl4 .val, .lvl4 .flame { color: #D21F12; }
+.lvl2 .flame, .lvl3 .flame, .lvl4 .flame { width: 20px; }
+.lvl3 .flame, .lvl4 .flame { animation: flicker .5s ease-in-out infinite alternate; }
+.lvl4 .flame { height: 30px; width: 24px; }
+.lvl3 { background: #FFF0E4; }
+.lvl4 { background: linear-gradient(160deg, #FFE9A8, #FFC9A6); animation: onfire 1.2s ease-in-out infinite; }
+@keyframes flicker { from { transform: scale(1, 1) rotate(-3deg); } to { transform: scale(1.08, 1.18) rotate(3deg); } }
+@keyframes onfire { 50% { box-shadow: 0 0 0 4px rgba(232,54,43,.18), 0 0 18px rgba(255,140,40,.45); } }
+/* à chaque bonne réponse : plus la série est longue, plus le saut est fort */
+.hit1 { animation: hit1 .45s cubic-bezier(.3,1.6,.5,1); }
+.hit2 { animation: hit2 .55s cubic-bezier(.3,1.6,.5,1); }
+.hit3 { animation: hit3 .65s cubic-bezier(.3,1.8,.5,1); }
+@keyframes hit1 { 40% { transform: translateY(-5px) scale(1.15); } }
+@keyframes hit2 { 40% { transform: translateY(-8px) scale(1.35) rotate(-6deg); } }
+@keyframes hit3 { 30% { transform: translateY(-12px) scale(1.6) rotate(-10deg); } 60% { transform: scale(1.2) rotate(6deg); } }
+.cell.streak.ring::after { content: ""; position: absolute; inset: 0; border-radius: 6px; border: 2px solid var(--red); animation: ring .6s ease-out forwards; pointer-events: none; }
+@keyframes ring { from { transform: scale(.9); opacity: 1; } to { transform: scale(1.35); opacity: 0; } }
+/* série perdue */
+.lost .val { animation: lost .7s ease; }
+@keyframes lost { 0% { transform: none; color: var(--red); } 30% { transform: translateY(6px) rotate(8deg); color: var(--red); } 100% { transform: none; } }
+.cell.good .val { font-size: 2.5rem; }
+
+.reset { all: unset; box-sizing: border-box; cursor: pointer; flex: none; display: inline-flex; align-items: center; gap: 7px; padding: 9px 13px; min-height: 40px; background: var(--paper); border: 1.5px solid var(--stage-deep); border-radius: 999px; font-size: .82rem; font-weight: 700; color: var(--ink); box-shadow: 0 1px 0 var(--stage-deep); transition: background .12s, border-color .12s; }
+.reset svg { width: 16px; height: 16px; flex: none; }
+.reset:hover { border-color: var(--ink); }
+.reset:active { transform: translateY(1px); }
+.reset.confirm { background: var(--red); border-color: var(--red); color: #fff; }
+.reset:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 480px) {
+  .brand { font-size: 1.7rem; }
+  .reset .rlabel { display: none; }
+  .reset { padding: 9px; width: 40px; justify-content: center; }
+  .reset.confirm { width: auto; padding: 9px 12px; }
+  .reset.confirm .rlabel { display: inline; }
+  .card { padding: 9px 11px 10px; }
+  .cell + .cell { padding-left: 11px; margin-left: 11px; }
+  .val { font-size: 1.8rem; }
+  .cell.good .val { font-size: 2.1rem; }
+}
+.toast { position: fixed; left: 50%; top: calc(12px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); background: var(--yellow); color: var(--ink); font-weight: 700; padding: 9px 16px; border-radius: 3px; font-size: .88rem; white-space: nowrap; }
+/* Écran de fin */
+.end-eyebrow { margin: 0; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--accent); }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 2px solid var(--ink); border-bottom: 1px solid var(--rule); }
+.stat { display: flex; flex-direction: column; gap: 4px; padding: 14px 10px 12px 0; min-width: 0; }
+.stat + .stat { padding-left: 12px; border-left: 1px solid var(--rule); }
+.stat b { font-family: var(--font-display); font-stretch: 75%; font-weight: 900; font-size: 2.3rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.stat b small { font-size: 1.1rem; color: var(--muted); font-weight: 700; }
+.stat span { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.nextup { display: flex; align-items: center; gap: 10px; padding: 14px; background: var(--row); border-radius: 4px; font-weight: 600; }
+.nextup .dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--red); animation: blink 1.2s steps(2, start) infinite; }
+.nextup em { font-style: normal; font-family: var(--font-mono); color: var(--red); white-space: nowrap; }
+.replay { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 14px 16px; min-height: 58px; border: 2px solid var(--accent); border-radius: 4px; color: var(--accent); font-weight: 800; text-align: center; }
+.replay small { font-weight: 500; font-size: .78rem; color: var(--muted); }
+.replay:hover { background: var(--row); }
+.replay:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tags .rev { background: var(--ink); color: var(--paper); font-weight: 700; padding: 2px 8px; border-radius: 3px; }
+.tags .rev + span::before { margin-left: 10px; }
+.empty { text-align: center; padding-block: 24px; color: var(--muted); }
+.empty .kw { color: var(--rule); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ===== Écran unique : tout tient dans la hauteur, sans défilement de page ===== */
+html, body { height: 100%; }
+body { overflow: hidden; }
+.wrap { height: 100%; box-sizing: border-box; padding-block: 14px; gap: 12px; }
+.top { flex: none; }
+.ls { display: none; }
+.sheet { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.sheet > * { flex: none; }
+.sheet .play { flex: 1 1 auto; min-height: auto; display: flex; flex-direction: column; justify-content: flex-end; position: relative; }
+.sheet .play > .opts { flex: none; }
+.sheet .play > .verdict { position: absolute; inset: 0; overflow-y: auto; justify-content: flex-start; }
+.verdict .actions { margin-top: auto; padding-top: 6px; }
+.go .n, .go > span { white-space: nowrap; }
+.meta { flex-wrap: nowrap; }
+.tags { flex-wrap: nowrap; overflow: hidden; white-space: nowrap; min-width: 0; }
+.sheet.end, .sheet .empty { justify-content: flex-start; }
+
+@media (max-width: 520px) {
+  .wrap { padding-block: 10px; gap: 10px; }
+  .toprow { align-items: center; }
+  .brand { font-size: 1.45rem; }
+  .live { display: none; }
+  .reset { width: 36px; min-height: 36px; padding: 8px; }
+  .lf { display: none; }
+  .ls { display: inline; }
+  .hud { grid-template-columns: auto minmax(0, 1fr); gap: 8px; }
+  .card { padding: 7px 10px; display: flex; align-items: center; gap: 8px; }
+  .cprog { flex-direction: row; }
+  .cprog .val { margin-top: 0; padding-top: 0; font-size: 1.25rem; }
+  .cprog .ptrack { display: none; }
+  .cscore { display: grid; grid-template-columns: auto auto; justify-content: space-between; box-shadow: 2px 2px 0 var(--ink); }
+  .cell { display: flex; align-items: center; gap: 6px; }
+  .cell + .cell { padding-left: 10px; margin-left: 10px; }
+  .val, .cell.good .val { font-size: 1.45rem; margin-top: 0; }
+  .srow { margin-top: 0; }
+  .flame { height: 20px; }
+  .lvl2 .flame, .lvl3 .flame { width: 15px; }
+  .lvl4 .flame { width: 18px; height: 22px; }
+  .rec { display: none; }
+  .sheet { padding: 18px 14px 14px; gap: 10px; box-shadow: 3px 3px 0 var(--stage-deep); }
+  .tags .cat { display: none; }
+  .tags { font-size: .75rem; }
+  .secs { font-size: 1.15rem; }
+  .kw { font-size: 3rem; }
+  .kw::after { width: 40px; height: 4px; margin-top: 8px; }
+  .opts { gap: 7px; }
+  .opt { min-height: 54px; padding: 9px 11px; gap: 11px; font-size: .95rem; line-height: 1.3; }
+  .opt .k { width: 28px; height: 28px; font-size: .8rem; }
+  .verdict { padding: 14px 13px; gap: 9px; }
+  .vtitle { font-size: 1.7rem; }
+  .answer { font-size: .95rem; }
+  .why { font-size: .88rem; line-height: 1.4; }
+  .src { font-size: .75rem; }
+  .go { min-height: 50px; padding: 12px 14px; }
+  .hold { min-height: 50px; }
+  .stats .stat b { font-size: 1.9rem; }
+  .verdict { background: rgba(44,37,33,.97); }
+}
+
+/* ===== Pas de barres de défilement : le verdict couvre toute la carte, et tout se compacte quand la fenêtre est basse ===== */
+.sheet, .verdict { scrollbar-width: none; }
+.sheet::-webkit-scrollbar, .verdict::-webkit-scrollbar { display: none; }
+.sheet .play { position: static; }
+.sheet .play > .verdict { inset: 8px 0 0 0; border-radius: 0 0 8px 8px; padding: 22px; }
+.sheet .play > .verdict { background: rgba(44,37,33,.97); }
+.vkw { margin: 0; font-family: var(--font-display); font-stretch: 70%; font-weight: 900; text-transform: uppercase; font-size: .95rem; letter-spacing: .04em; color: #CDBFB3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-height: 860px) and (min-width: 521px) {
+  .wrap { padding-block: 10px; gap: 10px; }
+  .top { gap: 10px; }
+  .brand { font-size: 1.6rem; }
+  .brandbox { flex-direction: row; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .live { font-size: .68rem; }
+  .hud { grid-template-columns: auto minmax(0, 1fr); }
+  .card { padding: 8px 14px; display: flex; align-items: center; gap: 10px; }
+  .cprog { flex-direction: row; }
+  .cprog .val { margin-top: 0; padding-top: 0; font-size: 1.4rem; }
+  .cprog .ptrack { width: 70px; margin-top: 0; }
+  .cscore { display: grid; grid-template-columns: auto auto; justify-content: start; box-shadow: 2px 2px 0 var(--ink); }
+  .cell { display: flex; align-items: center; gap: 8px; }
+  .cell + .cell { padding-left: 16px; margin-left: 16px; }
+  .val, .cell.good .val { font-size: 1.6rem; margin-top: 0; }
+  .srow { margin-top: 0; }
+  .rec { margin-top: 0; }
+  .cell, .cscore { min-width: auto; }
+  .cscore .lbl { overflow: visible; }
+  .cprog .lf { display: none; }
+  .cprog .ls { display: inline; }
+  .cprog .ptrack { width: 48px; }
+  .sheet { padding: 22px 20px 16px; gap: 12px; }
+  .opts { gap: 7px; }
+  .opt { padding: 9px 12px; }
+  .sheet .play > .verdict { padding: 18px 20px; gap: 9px; }
+  .vtitle { font-size: 1.8rem; }
+}
+
+/* Mot + réponses groupés et centrés verticalement dans la carte : plus de grand vide entre les deux */
+.sheet:not(.end) > .kw { margin-top: auto; }
+.sheet .play { flex: 0 0 auto; margin-bottom: auto; padding-top: 6px; }
+@media (max-height: 860px) and (min-width: 521px) and (max-width: 900px) { .rec { display: none; } }
+
+/* Carte à la hauteur de son contenu : pas de vide. Le verdict prend la place des réponses (dans le flux). */
+.sheet { flex: 0 1 auto; }
+.sheet:not(.end) > .kw { margin-top: 0; }
+.sheet .play { margin-bottom: 0; }
+.sheet .play > .verdict { position: static; inset: auto; border-radius: 6px; overflow: visible; }
+.sheet .play.revealed > .opts { display: none; }
+.vkw { display: none; }
+
+.kwrow { display: flex; align-items: flex-start; gap: .28em; min-width: 0; }
+.kwrow .kw { flex: 1 1 auto; min-width: 0; }
+.kdot { flex: none; width: 12px; height: 12px; margin-top: .55em; border-radius: 50%; background: var(--red); animation: blink 1.2s steps(2, start) infinite; }
+@media (max-width: 520px) { .kdot { width: 9px; height: 9px; } }
+
+/* point rouge dans la ligne du mot, centré sur la hauteur des capitales, à l'échelle du mot */
+.kdot { display: inline-block; width: max(10px, .2em); height: max(10px, .2em); margin: 0 .2em 0 0; vertical-align: .25em; }
+@media (max-width: 520px) { .kdot { width: max(9px, .2em); height: max(9px, .2em); } }
+/* très petits écrans : intitulé au-dessus du chiffre, pour qu'il reste lisible en entier */
+@media (max-width: 430px) {
+  .hud { grid-template-columns: minmax(0, .8fr) minmax(0, 2fr); }
+  .card { flex-direction: column; align-items: flex-start; gap: 3px; padding: 7px 10px 6px; }
+  .cprog { flex-direction: column; }
+  .cscore { display: grid; grid-template-columns: 1fr 1fr; align-items: start; }
+  .cell { flex-direction: column; align-items: flex-start; gap: 3px; }
+  .lbl { font-size: .6rem; letter-spacing: .06em; overflow: visible; }
+  .val, .cell.good .val, .cprog .val { font-size: 1.3rem; }
+}
+.vtitle small { font-size: .5em; letter-spacing: .02em; opacity: .85; }
+</style>
+<script>window.__ROUNDS = [{"id": "arthur-gea-20261011", "data": {"addedAt": "2026-10-11T13:00:00Z", "category": "Sport", "correct": 0, "explanation": "Le jeune joueur de tennis français est engagé au Masters 1000 de Shanghai, où se joue cette semaine le deuxième tour avec Alcaraz, Fils ou Vacherot, tenant du titre.", "keyword": "Arthur Géa", "options": ["Le jeune Français dispute le Masters 1000 de Shanghai", "Il vient de remporter Roland-Garros juniors", "Il a été nommé entraîneur de l'équipe de France de Coupe Davis"], "pubDate": "2026-10-11T06:10:00Z", "sources": [{"source": "ski-nordique.net", "url": "https://www.ski-nordique.net/masters-1000-shanghai-resultats-tableau-et-suivi-live-alcaraz-fils-et-vacherot-tenant-du-titre-debutent-bien.6754531-72348.html"}, {"source": "Eurosport", "url": "https://www.eurosport.fr/tennis/atp-shanghai/2026/atp-1000-shanghai-bu-stoppe-van-assche-dentree-le-resume-video_vid60102248/video.shtml"}], "traffic": "500+"}}, {"id": "closer-20261011", "data": {"addedAt": "2026-10-11T13:00:00Z", "category": "People", "correct": 0, "explanation": "Le nouveau numéro de l'hebdo people Closer s'inquiète pour Jordan Bardella et son couple, aux côtés d'autres sujets sur Laeticia Hallyday ou le prince William. Les revues de presse people de vendredi l'ont largement relayé.", "keyword": "Closer", "options": ["Le magazine people fait sa une sur le couple Bardella « dans la tourmente »", "Un film intitulé Closer sort en salles ce week-end", "Le magazine Closer a annoncé l'arrêt de sa version papier"], "pubDate": "2026-10-11T06:20:00Z", "sources": [{"source": "LeBlogTVNews", "url": "https://www.leblogtvnews.com/2026/10/la-une-des-hebdos-people-ce-vendredi-le-couple-bardella-dans-la-tourmente-prince-william-laeticia-hallyday.html"}], "traffic": "100+"}}, {"id": "cnn-20261011", "data": {"addedAt": "2026-10-11T13:00:00Z", "category": "International", "correct": 2, "explanation": "Après que la Maison-Blanche a écarté CNN du pool de journalistes, le département de la Justice de l'administration Trump a ouvert une enquête visant plusieurs chaînes (NBC, CBS, Fox, ABC, CNN) sur leur réaction.", "keyword": "CNN", "options": ["CNN a été racheté par un groupe français", "La chaîne a cessé d'émettre aux États-Unis", "Le ministère américain de la Justice enquête sur les grandes chaînes après la mise à l'écart de CNN par la Maison-Blanche"], "pubDate": "2026-10-11T06:10:00Z", "sources": [{"source": "BBC", "url": "https://www.bbc.com/news/articles/c9vgregzk6gro"}, {"source": "CNN", "url": "https://www.cnn.com/2026/10/10/media/trump-doj-probing-tv-networks-nbc-cbs-fox-abc-cnn-white-house"}], "traffic": "100+"}}, {"id": "conseil-municipal-20261011", "data": {"addedAt": "2026-10-11T13:00:00Z", "category": "Local", "correct": 2, "explanation": "Rien de national ici : c'est la saison des conseils municipaux d'automne, et la presse locale (La Dépêche, Petit Bleu…) publie leurs décisions, comme à Soues où l'on a parlé vestiaires de BMX, bureau de poste et voirie.", "keyword": "conseil municipal", "options": ["Une loi impose désormais la retransmission télévisée des conseils municipaux", "Des élections municipales anticipées ont été convoquées dans toute la France", "Les comptes rendus des conseils municipaux de rentrée paraissent dans la presse locale"], "pubDate": "2026-10-11T06:20:00Z", "sources": [{"source": "ladepeche.fr", "url": "https://www.ladepeche.fr/2026/10/11/vestiaires-du-bmx-bureau-de-poste-et-voirie-au-conseil-municipal-13595451.php"}, {"source": "PetitBleu.fr", "url": "https://www.petitbleu.fr/2026/10/10/les-decisions-du-conseil-municipal-13594023.php"}], "traffic": "100+"}}, {"id": "grenoble-a480-pietonne-tuee-20261011", "data": {"addedAt": "2026-10-11T14:20:00Z", "category": "Faits divers", "correct": 1, "explanation": "Dans la nuit de samedi à dimanche, une femme qui marchait sur l'autoroute A480 à Grenoble a été percutée par une voiture et n'a pas survécu. Selon la presse locale, il s'agissait d'une septuagénaire sans domicile fixe.", "keyword": "Grenoble", "options": ["Le téléphérique de la Bastille est tombé en panne", "Une piétonne a été tuée, percutée par une voiture sur l'A480", "Un incendie géant a touché le campus universitaire"], "pubDate": "2026-10-11T06:00:00Z", "sources": [{"source": "ICI (France Bleu)", "url": "https://www.ici.fr/auvergne-rhone-alpes/isere-38/grenoble/une-femme-qui-circulait-a-pied-sur-l-a480-decede-percutee-par-une-voiture-1658560"}, {"source": "France 3 (via Titrespresse)", "url": "https://www.titrespresse.com/24720302603/a480-grenoble-isere"}], "storyKey": "grenoble-a480-pietonne-tuee", "traffic": "20 k+"}}, {"id": "impot-sur-le-revenu-20261011", "data": {"addedAt": "2026-10-11T13:00:00Z", "category": "Économie", "correct": 1, "explanation": "Le projet de budget 2027 est examiné à l'Assemblée. En commission des finances, les députés ont modifié la partie recettes (Livret A, retraites, géants du numérique) avant de la rejeter : la discussion budgétaire démarre dans la douleur.", "keyword": "impôt sur le revenu", "options": ["Les avis d'imposition 2026 contenaient une erreur de calcul généralisée", "Les députés ont amendé puis rejeté en commission le volet recettes du budget 2027", "Le gouvernement a annoncé la suppression de l'impôt sur le revenu pour les moins de 30 ans"], "pubDate": "2026-10-11T06:30:00Z", "sources": [{"source": "franceinfo", "url": "https://www.franceinfo.fr/economie/budget/livret-a-retraites-geants-du-numerique-comment-les-deputes-ont-modifie-en-commission-le-volet-recettes-du-projet-de-budget-pour-2027_8229916.html"}, {"source": "Les Echos", "url": "https://www.lesechos.fr/economie-france/budget-fiscalite/budget-2027-la-discussion-budgetaire-demarre-aussi-mal-que-lan-passe-2256192"}], "traffic": "100+"}}, {"id": "le-dauphine-20261011", "data": {"addedAt": "2026-10-11T13:00:00Z", "category": "Faits divers", "correct": 0, "explanation": "Le quotidien régional a relaté un affrontement armé dans le centre de Chambéry, rue du Laurier, avec au moins cinq tirs entendus par les témoins. Les lecteurs l'ont cherché pour suivre l'affaire.", "keyword": "Le Dauphiné", "options": ["Le journal a rapporté des coups de feu en plein centre-ville de Chambéry", "Le Dauphiné Libéré a fusionné avec Le Progrès", "Le Critérium du Dauphiné change de parcours pour 2027"], "pubDate": "2026-10-11T06:10:00Z", "sources": [{"source": "Le Dauphiné Libéré", "url": "https://www.ledauphine.com/faits-divers-justice/2026/10/10/ils-ont-tire-au-moins-cinq-fois-des-coups-de-feu-en-plein-centre-ville-de-chambery"}], "traffic": "100+"}}, {"id": "lido-decor-effondre-20261011", "data": {"addedAt": "2026-10-11T14:20:00Z", "category": "Culture", "correct": 0, "explanation": "Samedi soir, un grand écran au fond de la scène a basculé pendant la comédie musicale « Singin' in the Rain » au Lido, sur les Champs-Élysées. Le public a été évacué par précaution, sans blessé, et la représentation de dimanche a été annulée.", "keyword": "Théâtre du Lido", "options": ["Un élément du décor de « Singin' in the Rain » s'est effondré en pleine représentation", "La salle a été rachetée par un milliardaire américain", "Le théâtre a accueilli un concert surprise de Beyoncé"], "pubDate": "2026-10-11T05:00:00Z", "sources": [{"source": "Orange Actualités", "url": "https://actu.orange.fr/france/paris-une-partie-du-decor-s-effondre-en-pleine-representation-au-lido-le-spectacle-interrompu-magic-CNT000002sCykl.html"}], "storyKey": "lido-decor-effondre", "traffic": "10 k+"}}, {"id": "manuscrit-20261011", "data": {"addedAt": "2026-10-11T13:00:00Z", "category": "Culture", "correct": 1, "explanation": "À Saint-Brieuc, un manuscrit qui dormait dans un grenier, estimé au départ à 300 €, a été adjugé 85 000 € et pourrait valoir 1,2 million d'euros. On se demande même s'il ne s'agit pas d'un trésor national.", "keyword": "manuscrit", "options": ["Un manuscrit inédit de Victor Hugo a été découvert à la BnF", "Un manuscrit oublié dans un grenier des Côtes-d'Armor, estimé 300 €, pourrait valoir plus d'un million", "Un éditeur a refusé le manuscrit d'un futur prix Goncourt"], "pubDate": "2026-10-11T06:10:00Z", "sources": [{"source": "Actu.fr", "url": "https://actu.fr/bretagne/saint-brieuc_22278/12-million-deuros-pour-un-manuscrit-qui-dormait-dans-un-grenier-en-cotes-darmor_64907598.html"}, {"source": "Le Télégramme", "url": "https://www.letelegramme.fr/bretagne/toutes-les-infos/estime-au-depart-a-300-euros-et-adjuge-a-85-000-eur-le-manuscrit-de-saint-brieuc-est-il-un-tresor-national-perdu-par-la-france-7134637.php"}], "traffic": "100+"}}, {"id": "maxime-raynaud-20261011", "data": {"addedAt": "2026-10-11T13:00:00Z", "category": "Sport", "correct": 0, "explanation": "Le basketteur français des Sacramento Kings s'est blessé face aux Warriors en pré-saison NBA. Sorti en fauteuil roulant, il pourrait souffrir d'une blessure sérieuse au genou ; un deuxième joueur des Kings, Darius Acuff, s'est aussi blessé.", "keyword": "Maxime Raynaud", "options": ["Le pivot français des Sacramento Kings est sorti en fauteuil roulant lors d'un match de pré-saison, on craint une grave blessure au genou", "Il vient d'être sélectionné pour le All-Star Game NBA", "Il a annoncé quitter la NBA pour rejoindre le championnat de France"], "pubDate": "2026-10-11T06:30:00Z", "sources": [{"source": "L'Équipe", "url": "https://www.lequipe.fr/Basket/Actualites/Sorti-sur-un-fauteuil-roulant-lors-d-un-match-de-pre-saison-des-sacramento-kings-maxime-raynaud-pourrait-etre-gravement-blesse-a-un-genou/1724894"}, {"source": "Basket USA", "url": "https://www.basketusa.com/news/947286/les-kings-craignent-le-pire-pour-maxime-raynaud/"}], "traffic": "200+"}}, {"id": "naufrage-djibouti-migrants-20261011", "data": {"addedAt": "2026-10-11T14:20:00Z", "category": "International", "correct": 0, "explanation": "Une embarcation transportant environ 350 personnes a chaviré entre Djibouti et le Yémen. L'Organisation internationale pour les migrations compte au moins 109 morts, dont 15 enfants, et plus d'une centaine de disparus.", "keyword": "naufrage", "options": ["Plus de 100 migrants sont morts dans un naufrage entre Djibouti et le Yémen", "Un paquebot de croisière a coulé au large de Marseille", "L'épave du Titanic a été renflouée"], "pubDate": "2026-10-11T11:00:00Z", "sources": [{"source": "Boursorama (AFP)", "url": "https://www.boursorama.com/actualite-economique/actualites/plus-de-100-migrants-perissent-dans-un-naufrage-au-large-de-djibouti-e45a66c8689ed04088d6f59ae58597e4"}, {"source": "Newsmax", "url": "https://www.newsmax.com/world/globaltalk/migrants-boat-shipwreck-djibouti-africa-yemen/2026/10/11/id/1272406/"}], "storyKey": "naufrage-djibouti-migrants", "traffic": "5 k+"}}, {"id": "panot-octobre-rose-polemique-20261011", "data": {"addedAt": "2026-10-11T14:20:00Z", "category": "Politique", "correct": 1, "explanation": "La députée LFI a expliqué sur X qu'elle ne porterait pas le ruban rose de la campagne contre le cancer du sein, réclamant plutôt un « Octobre colère ». Sa prise de position a provoqué de vives critiques au gouvernement comme au RN.", "keyword": "Mathilde Panot", "options": ["Elle annonce quitter La France insoumise", "Elle refuse de porter le ruban d'Octobre rose et déclenche une polémique", "Elle est nommée ministre de la Santé"], "pubDate": "2026-10-10T15:00:00Z", "sources": [{"source": "CNews", "url": "https://www.cnews.fr/france/2026-10-10/octobre-rose-la-nouvelle-provocation-de-la-deputee-lfi-mathilde-panot-qui-refuse"}, {"source": "Midi Libre (via Titrespresse)", "url": "https://www.titrespresse.com/24671082603/mathilde-panot-octobre"}], "storyKey": "panot-octobre-rose-polemique", "traffic": "20 k+"}}, {"id": "pape-leon-xiv-nodule-poumon-20261011", "data": {"addedAt": "2026-10-11T14:20:00Z", "category": "International", "correct": 1, "explanation": "À l'issue de l'Angélus dimanche, le pape Léon XIV a annoncé qu'il serait opéré pour retirer un nodule pulmonaire détecté à un stade très précoce. L'intervention doit avoir lieu en début de semaine à l'hôpital Gemelli de Rome.", "keyword": "nodule", "options": ["Un astronaute français a rapporté un nodule de roche lunaire", "Le pape Léon XIV annonce qu'il va être opéré d'un nodule au poumon", "Une étude relie les nodules thyroïdiens aux smartphones"], "pubDate": "2026-10-11T11:00:00Z", "sources": [{"source": "franceinfo", "url": "https://www.franceinfo.fr/monde/vatican/pape-leon-xiv/le-pape-leon-xiv-annonce-qu-il-va-etre-opere-d-un-nodule-au-poumon_8232658.html"}, {"source": "Le Matin", "url": "https://www.lematin.ch/story/vatican-le-pape-va-etre-opere-d-un-nodule-au-poumon-103647825"}], "storyKey": "pape-leon-xiv-nodule-poumon", "traffic": "5 k+"}}, {"id": "psg-le-mans-ligue1-20261011", "data": {"addedAt": "2026-10-11T14:20:00Z", "category": "Sport", "correct": 2, "explanation": "Pour la 6e journée de Ligue 1, le PSG a battu Le Mans 3-1 au Parc des Princes samedi soir. Maghnes Akliouche y a inscrit son tout premier but sous le maillot parisien.", "keyword": "Paris-SG – Le Mans", "options": ["Le promu manceau tient Paris en échec 0-0", "Le match est reporté à cause d'une panne d'éclairage", "Paris gagne 3-1, Akliouche marque son premier but parisien"], "pubDate": "2026-10-10T18:00:00Z", "sources": [{"source": "Foot Mercato", "url": "https://www.footmercato.net/live/6219066898043614270-paris-saint-germain-vs-le-mans"}, {"source": "Paris Fans", "url": "https://www.parisfans.fr/videos-psg/resume-video-psg-le-mans-3-1-premier-but-dakliouche-a-paris-924130.html"}], "storyKey": "psg-le-mans-ligue1", "traffic": "200 k+"}}, {"id": "real-madrid-villarreal-liga-20261011", "data": {"addedAt": "2026-10-11T14:20:00Z", "category": "Sport", "correct": 0, "explanation": "Au Bernabéu, le Real Madrid a battu Villarreal 1-0 en Liga grâce à un but de Yan Diomande en seconde période. Vinicius Junior a été exclu d'un carton rouge direct peu après, rendant la fin de match tendue.", "keyword": "Real Madrid – Villarreal", "options": ["Le Real s'impose 1-0 malgré l'expulsion de Vinicius", "Villarreal crée l'exploit en gagnant 3-0 au Bernabéu", "Mbappé inscrit un triplé dans un match fou 4-4"], "pubDate": "2026-10-10T19:00:00Z", "sources": [{"source": "Goal", "url": "https://www.goal.com/fr/listes/notes-des-joueurs-du-real-madrid-contre-villarreal-yan-diomande-heros-improbable-alors-que-vinicius-junior-voit-rouge-dans-une-victoire-tendue/blt1a8e5d638a097e92"}, {"source": "Livefoot", "url": "https://www.livefoot.fr/direct/la-liga-espagne/match-real-madrid-vs-villarreal-f0350202"}], "storyKey": "real-madrid-villarreal-liga", "traffic": "200 k+"}}, {"id": "riyad-aeroport-attaque-20261011", "data": {"addedAt": "2026-10-11T14:20:00Z", "category": "International", "correct": 2, "explanation": "Le terminal passagers de l'aéroport international de Riyad a été visé samedi par une attaque qui a fait au moins 12 morts et plus de 300 blessés selon les autorités saoudiennes. La coalition menée par Riyad accuse les rebelles houthis du Yémen et promet une riposte.", "keyword": "Riyad", "options": ["La ville a été désignée hôte des JO d'hiver 2034", "Un séisme a frappé la capitale saoudienne", "Une attaque attribuée aux Houthis a fait au moins 12 morts à l'aéroport"], "pubDate": "2026-10-10T17:00:00Z", "sources": [{"source": "Euronews", "url": "https://www.euronews.com/2026/10/10/evacuations-and-injuries-reported-at-riyadh-airport-after-another-alleged-houthi-attack"}, {"source": "France 24", "url": "https://www.france24.com/fr/moyen-orient/20261011-une-attaque-contre-l-a%C3%A9roport-de-riyad-fait-au-moins-12-morts-et-plus-de-300-bless%C3%A9s"}], "storyKey": "riyad-aeroport-attaque", "traffic": "20 k+"}}, {"id": "sante-20261011", "data": {"addedAt": "2026-10-11T13:00:00Z", "category": "Science", "correct": 1, "explanation": "Une étude relayée par Le Monde classe les 17 plus grandes menaces qui pèsent sur la santé humaine d'ici la fin du siècle. Le sujet a été repris partout, parfois sous l'angle de l'« extinction de l'humanité ».", "keyword": "santé", "options": ["L'OMS a déclaré une nouvelle pandémie mondiale", "Des scientifiques ont listé les 17 principales menaces pour la santé humaine d'ici 2100", "Le ministère de la Santé a été supprimé lors d'un remaniement"], "pubDate": "2026-10-11T06:10:00Z", "sources": [{"source": "Le Monde", "url": "https://www.lemonde.fr/planete/article/2026/10/11/des-scientifiques-etablissent-la-liste-des-17-principales-menaces-pesant-sur-la-sante-humaine-d-ici-a-2100_6791095_3244.html"}], "traffic": "200+"}}, {"id": "star-academy-lancement-saison-20261011", "data": {"addedAt": "2026-10-11T14:20:00Z", "category": "Culture", "correct": 1, "explanation": "La nouvelle saison de la Star Academy a été lancée samedi soir sur TF1 avec son premier prime. Elle marque l'arrivée de Quentin Mosimann, ancien gagnant de l'émission, au poste de directeur du château.", "keyword": "Star Academy", "options": ["TF1 annonce l'arrêt définitif de l'émission", "La nouvelle saison a démarré samedi sur TF1 avec Quentin Mosimann comme directeur", "Un ancien élève remporte l'Eurovision"], "pubDate": "2026-10-10T17:00:00Z", "sources": [{"source": "Paris Match Belgique", "url": "https://www.parismatch.be/culture/musique/2026/09/07/quentin-mosimann-est-le-nouveau-directeur-de-la-star-academy-2LVTJPB4KJESBGNMJQ5B4SF7BI/"}, {"source": "Coulisses TV", "url": "https://www.coulisses-tv.fr/index.php/dossiers/tf1/star-academy/item/56489-star-academy-premier-prime-samedi-10-octobre-2026-sur-tf1,-voici-toutes-les-nouveaut%C3%A9s"}], "storyKey": "star-academy-lancement-saison", "traffic": "50 k+"}}];</script>
+</head>
+<body>
+
+
+<div class="wrap">
+  <div class="top">
+    <div class="toprow">
+      <div class="brandbox">
+        <h1 class="brand">Pourquoi ça <span>buzze</span>&nbsp;?</h1>
+        <div class="live"><span class="dot"></span><span id="liveTxt">Tendances Google · France</span></div>
+      </div>
+      <button type="button" class="reset" id="reset" aria-label="Remettre le jeu à zéro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+        <span class="rlabel" id="resetLbl">Remettre à zéro</span>
+      </button>
+    </div>
+    <div class="hud">
+      <div class="card cprog" aria-live="polite">
+        <span class="lbl"><span class="lf">News jouées</span><span class="ls">News</span></span>
+        <b class="val" id="stock">0/0</b>
+        <div class="ptrack"><i id="pfill"></i></div>
+      </div>
+      <div class="card cscore" aria-live="polite">
+        <div class="cell streak lvl0" id="streakCell" title="Nombre de bonnes réponses d'affilée, sans erreur">
+          <span class="lbl"><span class="lf">Série sans faute</span><span class="ls">Sans faute</span></span>
+          <div class="srow">
+            <svg class="flame" viewBox="0 0 20 26" aria-hidden="true"><path d="M10 0c1 5 6 7 6 14a6 6 0 0 1-12 0c0-3 1.5-5 3-6 0 2.5 1 4 2.5 4C8.5 8 9.5 4 10 0z"/></svg>
+            <b class="val" id="nStreak">0</b>
+          </div>
+          <span class="rec" id="nRec">record 0</span>
+        </div>
+        <div class="cell good"><span class="lbl"><span class="lf">Bonnes réponses</span><span class="ls">Bonnes</span></span><b class="val" id="nGood">0</b></div>
+      </div>
+    </div>
+  </div>
+
+  <main class="sheet" id="sheet">
+    <div class="empty"><p class="kw">…</p><p>Chargement de ce que la France recherche en ce moment.</p></div>
+  </main>
+
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+  const ANSWER_S = 15;   // temps pour répondre
+  const NEXT_S = 8;      // temps avant la question suivante
+  const $ = (id) => document.getElementById(id);
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+  };
+  let score = store.get("buzz.score", { good: 0, bad: 0, streak: 0 });
+  let seen = new Set(store.get("buzz.seen", []));
+  let rounds = new Map(), queue = [], current = null, firstLoad = true, raf = 0, held = false;
+  let replay = false, replayDone = false, endTimer = 0;
+  const rev = { played: 0, good: 0 };
+  const session = { played: 0, good: 0, best: 0 };
+
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+  const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  function ago(iso) {
+    const t = Date.parse(iso); if (!t) return "";
+    const m = Math.round((Date.now() - t) / 60000);
+    if (m < 60) return `il y a ${Math.max(m, 1)} min`;
+    const h = Math.round(m / 60); return h < 48 ? `il y a ${h} h` : `il y a ${Math.round(h / 24)} j`;
+  }
+  function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 2800); }
+  function bump(id) { const e = $(id); e.classList.remove("bump"); void e.offsetWidth; e.classList.add("bump"); }
+  // Paliers de série : 0 | 1-2 | 3-4 | 5-9 | 10+
+  const level = (s) => s >= 10 ? 4 : s >= 5 ? 3 : s >= 3 ? 2 : s >= 1 ? 1 : 0;
+  function renderScore() {
+    $("nGood").textContent = score.good;
+    $("nStreak").textContent = score.streak;
+    score.best = Math.max(score.best || 0, score.streak);
+    $("nRec").textContent = `record ${score.best}`;
+    const c = $("streakCell");
+    c.className = c.className.replace(/\blvl\d\b/g, "").trim() + " lvl" + level(score.streak);
+  }
+  function animStreak(ok, before, prevBest) {
+    const c = $("streakCell"), v = $("nStreak");
+    v.classList.remove("hit1", "hit2", "hit3"); c.classList.remove("ring", "lost"); void v.offsetWidth;
+    if (ok) {
+      const l = level(score.streak);
+      v.classList.add(l >= 3 ? "hit3" : l === 2 ? "hit2" : "hit1");
+      if (l >= 3) c.classList.add("ring");
+      if ([3, 5, 10, 15, 20].includes(score.streak)) toast(score.streak >= 10 ? `En feu : ${score.streak} sans faute !` : `${score.streak} bonnes réponses d'affilée !`);
+      if (score.streak > prevBest && score.streak > 2) $("nRec").textContent = `nouveau record !`;
+    } else if (before >= 2) {
+      c.classList.add("lost");
+      toast(`Série de ${before} perdue`);
+    }
+  }
+
+  // Compte à rebours générique : met à jour la bande du haut et appelle onSec / onEnd
+  function countdown(total, onSec, onEnd) {
+    cancelAnimationFrame(raf);
+    const start = performance.now(), bar = $("clockBar"); let last = -1;
+    const tick = (now) => {
+      const left = Math.max(0, total - (now - start) / 1000);
+      if (bar) bar.style.transform = `scaleX(${left / total})`;
+      const s = Math.ceil(left); if (s !== last) { last = s; onSec(s); }
+      if (left <= 0) { onEnd(); return; }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+  }
+
+  function refillQueue() {
+    const all = [...rounds.keys()];
+    if (replay) { replay = false; replayDone = true; queue = []; return; }   // révision finie → écran de fin
+    const fresh = all.filter(id => !seen.has(id));   // vide = fin des tendances → écran de fin
+    fresh.sort((a, b) => (rounds.get(b).addedAt || "").localeCompare(rounds.get(a).addedAt || ""));
+    queue = shuffle(fresh.slice(0, 6)).concat(shuffle(fresh.slice(6)));
+  }
+  function updateStock() {
+    const left = [...rounds.keys()].filter(id => !seen.has(id)).length;
+    $("stock").innerHTML = `${rounds.size - left}<small>/${rounds.size}</small>`;
+    $("pfill").style.width = rounds.size ? ((rounds.size - left) / rounds.size * 100) + "%" : "0";
+  }
+
+  function nextRound() {
+    cancelAnimationFrame(raf); clearTimeout(revealT); clearInterval(endTimer);
+    queue = queue.filter(id => rounds.has(id));
+    if (!queue.length) refillQueue();
+    const id = queue.shift();
+    if (!id) {
+      current = null;
+      if (rounds.size) renderEnd();
+      else $("sheet").innerHTML = `<div class="empty"><p class="kw">…</p><p>Pas encore de news. La liste se remplit toute seule chaque heure.</p></div>`;
+      return;
+    }
+    current = { id, replay, ...rounds.get(id) };
+    renderRound();
+  }
+
+  // Prochaine mise à jour : la liste est rafraîchie chaque heure, vers hh:10 une fois les questions écrites
+  function nextUpdate() {
+    const d = new Date(); d.setSeconds(0, 0);
+    if (d.getMinutes() >= 10) d.setHours(d.getHours() + 1);
+    d.setMinutes(10);
+    return d;
+  }
+  function renderEnd() {
+    const sheet = $("sheet");
+    sheet.className = "sheet end";
+    const hasSession = session.played > 0;
+    const stats = hasSession
+      ? `<div class="stat"><b>${session.good}<small>/${session.played}</small></b><span>bonnes réponses</span></div>
+         <div class="stat"><b>${session.best}</b><span>meilleure série sans faute</span></div>
+         <div class="stat"><b>${score.good}</b><span>total cumulé</span></div>`
+      : `<div class="stat"><b>${rounds.size}</b><span>news jouées</span></div>
+         <div class="stat"><b>${score.streak}</b><span>série en cours</span></div>
+         <div class="stat"><b>${score.good}</b><span>total cumulé</span></div>`;
+    const eyebrow = replayDone ? `Révision terminée · ${rev.good}/${rev.played} bonnes réponses` : "Fin des news du moment";
+    replayDone = false;
+    sheet.innerHTML = `
+      <p class="end-eyebrow">${eyebrow}</p>
+      <h2 class="kw">Vous avez tout joué</h2>
+      <div class="stats">${stats}</div>
+      <div class="nextup" aria-live="polite"><span class="dot"></span><span id="nextUp"></span></div>
+      <button type="button" class="replay" id="replayBtn">Rejouer les anciennes<small>Ces parties ne comptent pas dans le score</small></button>`;
+    const tickEnd = () => {
+      const t = nextUpdate(), min = Math.max(1, Math.round((t - Date.now()) / 60000));
+      const hh = `${t.getHours()}h${String(t.getMinutes()).padStart(2, "0")}`;
+      $("nextUp").innerHTML = Array.isArray(window.__ROUNDS)
+        ? `Version de test · de nouvelles news arriveront dans la prochaine version`
+        : `Nouvelles news vers ${hh} · <em>dans ${min} min</em>`;
+    };
+    tickEnd(); endTimer = setInterval(tickEnd, 20000);
+    $("replayBtn").addEventListener("click", () => {
+      replay = true; rev.played = 0; rev.good = 0;
+      queue = shuffle([...rounds.keys()]);          // chaque tendance une fois, puis fin
+      nextRound();
+    });
+    $("replayBtn").focus({ preventScroll: true });
+  }
+
+  // Ajuste la taille du mot pour qu'il tienne toujours sur une ligne
+  function fitKw() {
+    const el = document.querySelector(".sheet:not(.end) .kwrow .kw"); if (!el) return;
+    el.style.fontSize = "";
+    const max = parseFloat(getComputedStyle(el).fontSize), min = 20;
+    const w = el.clientWidth, need = el.scrollWidth;
+    if (need > w && w > 0) el.style.fontSize = Math.max(min, Math.floor(max * w / need * 0.98)) + "px";
+  }
+  addEventListener("resize", () => { clearTimeout(fitKw.t); fitKw.t = setTimeout(fitKw, 80); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitKw);
+
+  function renderRound() {
+    const r = current, sheet = $("sheet");
+    sheet.className = "sheet";
+    current.order = shuffle(r.options.map((text, i) => ({ text, i })));
+    const tags = [
+      r.replay ? `<span class="rev">Révision · hors score</span>` : "",
+      r.traffic ? `<span class="hot">${esc(r.traffic)} recherches</span>` : "",
+      r.pubDate ? `<span>${esc(ago(r.pubDate))}</span>` : "",
+      r.category ? `<span class="cat">${esc(r.category)}</span>` : ""
+    ].join("");
+    sheet.innerHTML = `
+      <div class="clock" aria-hidden="true"><i id="clockBar"></i></div>
+      <div class="meta"><div class="tags">${tags}</div><span class="secs" id="secs" aria-live="off">${ANSWER_S}<small>s</small></span></div>
+      <div class="kwrow"><h2 class="kw"><span class="kdot" aria-hidden="true"></span>${esc(r.keyword)}</h2></div>
+      <div class="play">
+        <div class="opts" role="group" aria-label="Pourquoi ce mot est-il en tendance ?">
+          ${current.order.map((o, n) => `<button type="button" class="opt" id="opt${n}" data-i="${o.i}"><span class="k">${"ABC"[n]}</span><span>${esc(o.text)}</span></button>`).join("")}
+        </div>
+        <div class="verdict" id="verdict" role="dialog" aria-live="polite" hidden></div>
+      </div>`;
+    sheet.querySelectorAll(".opt").forEach(b => b.addEventListener("click", () => answer(+b.dataset.i)));
+    fitKw();
+    countdown(ANSWER_S,
+      (s) => { $("secs").innerHTML = `${s}<small>s</small>`; sheet.classList.toggle("mid", s <= 9 && s > 5); sheet.classList.toggle("urgent", s <= 5); },
+      () => answer(null));
+  }
+
+  function answer(i) {
+    if (!current || current.answered) return;
+    current.answered = true; cancelAnimationFrame(raf);
+    const sheet = $("sheet");
+    const ok = i === current.correct, late = i === null;
+    if (!current.replay) {
+      const before = score.streak, prevBest = score.best || 0;
+      score.good += ok ? 1 : 0; score.streak = ok ? score.streak + 1 : 0;
+      renderScore(); store.set("buzz.score", score); animStreak(ok, before, prevBest); if (ok) bump("nGood");
+      session.played++; session.good += ok ? 1 : 0; session.best = Math.max(session.best, score.streak);
+      seen.add(current.id); store.set("buzz.seen", [...seen]); updateStock();
+    } else { rev.played++; rev.good += ok ? 1 : 0; }
+    sheet.classList.remove("urgent", "mid"); sheet.classList.add("next");
+    if (!ok) { void sheet.offsetWidth; sheet.classList.add("bad"); }
+
+    sheet.querySelectorAll(".opt").forEach(b => {
+      const bi = +b.dataset.i; b.disabled = true;
+      b.classList.add(bi === current.correct ? "right" : bi === i ? "wrong" : "dim");
+    });
+    const title = ok ? (!current.replay && score.streak >= 3 ? `Vrai <small>· ${score.streak} d'affilée</small>` : "Vrai") : late ? "Temps écoulé" : "Faux";
+    const src = (current.sources || []).slice(0, 3).map(s => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.source || "Source")}</a>`).join("");
+    const v = $("verdict");
+    v.innerHTML = `
+      <p class="vkw">${esc(current.keyword)}</p>
+      <h3 class="vtitle ${ok ? "ok" : "ko"}">${title}</h3>
+      ${ok ? "" : `<p class="answer"><small>La bonne réponse</small>${esc(current.options[current.correct])}</p>`}
+      <p class="why">${esc(current.explanation)}</p>
+      ${src ? `<div class="src">À lire : ${src}</div>` : ""}
+      <div class="actions">
+        <button type="button" class="go" id="go"><span><span class="lf">Question suivante</span><span class="ls">Suivante</span></span><span class="n" id="nextN">${NEXT_S} s</span></button>
+        <button type="button" class="hold" id="hold">Pause</button>
+      </div>`;
+    $("go").addEventListener("click", nextRound);
+    $("hold").addEventListener("click", togglePause);
+    held = false;
+    // on laisse voir une seconde la bonne / mauvaise case, puis le verdict recouvre les propositions
+    const roundId = current.id;
+    clearTimeout(revealT);
+    revealT = setTimeout(() => {
+      if (!current || current.id !== roundId) return;
+      v.parentElement.classList.add("revealed"); v.hidden = false; void v.offsetWidth; v.classList.add("show");
+      $("go").focus({ preventScroll: true });
+      runNext(NEXT_S);
+    }, 900);
+  }
+  let revealT = 0;
+
+  let nextLeft = NEXT_S;
+  function runNext(total) {
+    countdown(total,
+      (s) => { nextLeft = s; $("secs").innerHTML = `${s}<small>s</small>`; const n = $("nextN"); if (n) n.textContent = `${s} s`; },
+      nextRound);
+  }
+  function togglePause() {
+    held = !held;
+    if (held) { cancelAnimationFrame(raf); $("hold").textContent = "Reprendre"; $("nextN").textContent = "en pause"; }
+    else { $("hold").textContent = "Pause"; runNext(nextLeft); }
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (!current) return;
+    const n = { a: 0, b: 1, c: 2, "1": 0, "2": 1, "3": 2 }[e.key.toLowerCase()];
+    if (n !== undefined && !current.answered && current.order) answer(current.order[n].i);
+  });
+  // Remise à zéro complète : score, tendances jouées, session, révision → nouvelle partie
+  let resetArmed = 0;
+  $("reset").addEventListener("click", () => {
+    const btn = $("reset");
+    if (!resetArmed) {                      // 1er appui : demande confirmation
+      btn.classList.add("confirm"); $("resetLbl").textContent = "Confirmer ?";
+      resetArmed = setTimeout(() => { resetArmed = 0; btn.classList.remove("confirm"); $("resetLbl").textContent = "Remettre à zéro"; }, 3000);
+      return;
+    }
+    clearTimeout(resetArmed); resetArmed = 0;
+    btn.classList.remove("confirm"); $("resetLbl").textContent = "Remettre à zéro";
+    score = { good: 0, streak: 0, best: 0 }; store.set("buzz.score", score);
+    seen = new Set(); store.set("buzz.seen", []);
+    session.played = session.good = session.best = 0;
+    replay = false; replayDone = false; rev.played = rev.good = 0;
+    queue = []; current = null;
+    renderScore(); updateStock();
+    if (rounds.size) { refillQueue(); nextRound(); }
+    toast("Nouvelle partie");
+  });
+  renderScore();
+
+  (async () => {
+    const STATIC = Array.isArray(window.__ROUNDS);
+    const db = STATIC ? {
+      collection: () => ({ orderBy() { return this; }, limit() { return this; },
+        onSnapshot(cb) { cb({ docs: window.__ROUNDS.map(x => ({ id: x.id, data: () => x.data })) }); return () => {}; } })
+    } : await window.claude?.use?.("db");
+    if (!db) { $("sheet").innerHTML = `<div class="empty"><p class="kw">Hors ligne</p><p>Ouvrez la page connecté à claude.ai pour charger les tendances.</p></div>`; return; }
+    db.collection("rounds").orderBy("addedAt", "desc").limit(1000).onSnapshot((snap) => {
+      const before = new Set(rounds.keys());
+      rounds = new Map();
+      // filet de sécurité anti-doublons : une seule question par histoire (storyKey) ou par mot identique, la plus récente gagne
+      const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+      const keys = new Set();
+      snap.docs.forEach(d => {
+        const v = d.data();
+        if (!(v && Array.isArray(v.options) && v.options.length === 3 && Number.isInteger(v.correct))) return;
+        const k1 = v.storyKey ? "s:" + v.storyKey : null, k2 = "k:" + norm(v.keyword);
+        if ((k1 && keys.has(k1)) || keys.has(k2)) return;
+        if (k1) keys.add(k1); keys.add(k2);
+        rounds.set(d.id, v);
+      });
+      const added = [...rounds.keys()].filter(id => !before.has(id) && !seen.has(id));
+      // on oublie les questions retirées de la liste
+      const pruned = [...seen].filter(id => rounds.has(id));
+      if (pruned.length !== seen.size && rounds.size) { seen = new Set(pruned); store.set("buzz.seen", pruned); }
+      updateStock();
+      const newest = [...rounds.values()].map(v => v.addedAt).sort().pop();
+      if (newest) $("liveTxt").textContent = `Tendances Google · France · mises à jour ${ago(newest)}`;
+      if (firstLoad) { firstLoad = false; refillQueue(); nextRound(); return; }
+      if (added.length) {
+        // les nouveautés font sortir de l'écran de fin et du mode révision
+        if (replay) { replay = false; queue = []; }
+        queue = shuffle(added).concat(queue.filter(id => rounds.has(id) && !added.includes(id)));
+        toast(`${added.length} nouvelle${added.length > 1 ? "s" : ""} news`);
+        if (!current) nextRound();
+      }
+    }, () => { $("liveTxt").textContent = "Connexion perdue · rechargez la page"; });
+  })();
+})();
+</script>
+
+</body>
+</html>
